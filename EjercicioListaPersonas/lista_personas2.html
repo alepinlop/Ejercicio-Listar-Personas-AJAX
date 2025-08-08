@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Ejercicio Listado Personas. AJAX</title>
+    <style type="text/css">
+      h3{
+        color: red;
+      }
+			
+			/* CSS para el formulario:   */
+			.formPersonas{
+				visibility: hidden;  
+				position: absolute;
+				top: 20%;
+				left: 20%;
+				z-index:11;
+				background-color: pink;
+				border: 2px solid maroon;
+				border-radius: 15px;
+				padding: 1em;
+				color: red;
+				
+			/*	opacity:0;   */
+			/*	transition: all 1s;   */
+			}
+
+			.formPersonas div label {
+				display: block;
+				margin-top: .5em;
+			}
+			
+			.formPersonas .btn {
+				display: block;
+				margin-top: 1em;
+			}
+			
+			
+			.ver {
+				visibility: visible;  
+				opacity:1;
+			}
+			
+    </style>
+		<script type="text/javascript" src="util2AJAX.js"></script>
+    <script type="text/javascript">
+		
+			var peti = new XMLHttpRequest();
+			
+			let peti2 = new XMLHttpRequest();
+
+			var url = 'http://localhost/ajax/lista_personas/servidor.php';
+
+
+
+			window.onload = () => {
+			//	var btNuevaPersona = document.getElementById("btNuevaPersona");
+				document.getElementById("btNuevaPersona").onclick = muestraForm;
+				var btCancelar = document.getElementById("btCancelar");
+
+				peti.onreadystatechange = pintaPersonas; // Asignar la función para llamar las personas de la tabla
+
+				peti.open('POST', url);
+				peti.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+				let parametro = JSON.stringify({ 
+					servicio: "listar",
+				});
+				
+				peti.send(parametro);
+			}
+
+			const pintaPersonas = () => {
+				console.log("llega");
+				if(peti.readyState == 4) {
+					if(peti.status == 200) {
+						console.log(peti.responseText);
+
+						//Aquí metemos el código para poner las personas en la tabla.
+						let personas = JSON.parse(peti.responseText); // Hace una llamada a los elementos del fichero de texto.
+						console.log("personas", personas);
+
+						pintaTabla(personas); // Llamada a la función que pinta la tabla
+					}
+				}
+			}
+
+
+			const pintaTabla = (arrPersonas) => {
+				let tabla = document.getElementById("filas_tabla"); // Llamada al cuerpo de la tabla
+
+				tabla.innerHTML = ""; // Limpiamos la tabla
+
+				for (let i = 0; i < arrPersonas.length; i++) {
+					let fila = document.createElement("tr");
+
+					let celdaID = document.createElement("td");
+					celdaID.innerHTML = arrPersonas[i].ID;
+					fila.appendChild(celdaID);
+
+					let celdaDNI = document.createElement("td");
+					celdaDNI.innerHTML = arrPersonas[i].DNI;
+					fila.appendChild(celdaDNI);
+
+					let celdaNombre = document.createElement("td");
+					celdaNombre.innerHTML = arrPersonas[i].NOMBRE;
+					fila.appendChild(celdaNombre);
+
+					let celdaApellidos = document.createElement("td");
+					celdaApellidos.innerHTML = arrPersonas[i].APELLIDOS;
+					fila.appendChild(celdaApellidos);
+
+					let celdaBorrar = document.createElement("td");
+					let botonBorrar = document.createElement("button");
+					botonBorrar.innerHTML = "Borrar";
+					celdaBorrar.appendChild(botonBorrar);
+					fila.appendChild(celdaBorrar);
+
+					let celdaEditar = document.createElement("td");
+					let botonEditar = document.createElement("button");
+					botonEditar.innerHTML = "Editar";
+					celdaEditar.appendChild(botonEditar);
+					fila.appendChild(celdaEditar);
+
+					tabla.appendChild(fila);
+				}
+			}
+
+			const muestraForm = () => {
+				console.log("llega al boton");
+				// Mostrar el formulario
+				document.getElementById("formPersonas").classList.add("ver");
+
+				// Función del botón Añadir
+				document.getElementById("btAnade").onclick = anade;
+
+				// Función del botón cancelar
+				document.getElementById("btCancelar").onclick  = cancelar;
+
+
+			}
+
+			const cancelar = () => {
+				console.log("pulsado el boton cancelar");
+				// Ocultar el formulario
+				document.getElementById("formPersonas").classList.remove("ver");
+			}
+
+			const anade = () => {
+					console.log("pulsado el boton añadir");
+					// Recoger los datos del formulario
+					let dni = document.getElementById("dni").value;
+					let nombre = document.getElementById("nombre").value;
+					let apellidos = document.getElementById("apellidos").value;
+					console.log("dni", dni);
+					console.log("nombre", nombre);
+					console.log("apellidos", apellidos);
+
+					// Enviar los datos a la tabla
+					peti2.onreadystatechange = pintaPersonas; // Asignar la función para llamar las personas de la tabla
+					peti2.open('POST', url);
+					peti2.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+					let parametro = JSON.stringify({ 
+						servicio: "insertar",
+						dni,
+						nombre,
+						apellidos,
+					});
+
+					console.log("parametro", parametro);
+
+					peti2.send(parametro);
+			}
+
+    </script>
+  </head>
+  <body>
+    <h3>Registro de Usuarios</h3>
+		
+		<div id="formPersonas" class="formPersonas ">
+			<fieldset>
+				<legend>Alta en el servicio</legend>
+				<div>
+					<label for="dni">DNI</label>
+					<input type="text" id="dni" size="10" maxlength="9" value="27473339T"/>
+				</div>
+				<div>
+					<label for="nombre">Nombre</label>
+					<input type="text" id="nombre" value="Marco Elio"/>
+				</div>
+				<div>
+					<label for="apellidos">Apellidos</label>
+					<input type="text" id="apellidos" size="40" value="García Gomariz"/>
+				</div>
+				<div class="btn">
+					<button id="btAnade">Añadir </button> 
+					<button id="btCancelar">Cancelar </button>
+				</div>
+			</fieldset>
+		</div>
+		
+		
+		
+		<br/>
+	 <button class="btn" id="btNuevaPersona">Nueva persona</button> 
+	 <br><br>
+		<table id="tabla_personas" border="1">
+			<tr>
+				<th>ID</th>
+				<th>DNI</th>
+				<th>NOMBRE</th>
+				<th>APELLIDOS</th>
+				<th>Borrar</th>
+				<th>Editar</th>
+			</tr>
+			
+			<tbody id="filas_tabla">
+			
+			</tbody>
+		</table>
+
+		<br><br>
+		
+  </body>
+</html>

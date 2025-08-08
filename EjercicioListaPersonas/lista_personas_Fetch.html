@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Ejercicio Listado Personas. AJAX</title>
+    <style type="text/css">
+      h3 {
+        color: red;
+      }
+
+      .formPersonas {
+        visibility: hidden;
+        position: absolute;
+        top: 20%;
+        left: 20%;
+        z-index: 11;
+        background-color: pink;
+        border: 2px solid maroon;
+        border-radius: 15px;
+        padding: 1em;
+        color: red;
+      }
+
+      .formPersonas div label {
+        display: block;
+        margin-top: .5em;
+      }
+
+      .formPersonas .btn {
+        display: block;
+        margin-top: 1em;
+      }
+
+      .ver {
+        visibility: visible;
+        opacity: 1;
+      }
+    </style>
+
+    <script type="text/javascript">
+      const url = 'http://localhost/ajax/lista_personas/servidor.php';
+      let modoEdicion = false;
+      let idEnEdicion = null;
+
+      window.onload = () => {
+
+        // fetch('https://jsonplaceholder.typicode.com/users/1')
+        //   .then(respuesta => console.log(respuesta))
+        //   .catch(error => console.log(error));
+
+        // Ejemplo de promesas con fetch
+        /*
+          fetch('https://jsonplaceholder.typicode.com/users/1')
+          .then(respuesta =>{
+              console.log(respuesta);
+              respuesta.json().then(datos =>{ 
+                console.log("Esto son los datos: ", datos);
+              });
+          })
+          .catch(error => console.log(error));
+
+          let param = JSON.stringify({
+            nombre: 'Nathan Sebhastian',
+            correo: 'ns@mail.com'
+          });
+
+          let petiFetch =   {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: param,
+          }        
+
+
+          fetch('https://jsonplaceholder.typicode.com/users', petiFetch)
+            .then(respuesta => respuesta.json())
+            .then(datos => console.log("datos finales: ", datos))
+        */
+
+
+
+        // fetch('https://jsonplaceholder.typicode.com/users/1')
+        //   .then(respuesta => respuesta.json())
+        //   .then(resp => console.log(resp))
+
+
+        document.getElementById("btNuevaPersona").onclick = muestraForm;
+
+        let peti = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ servicio: "listar" })
+        };
+        fetch(url, peti)
+          .then(respuesta => respuesta.json())
+          .then(datos => {
+            console.log("Esto son los datos: ", datos);
+            pintaTabla(datos);
+          })
+          .catch(error => console.log(error));
+      };
+
+      // Ya no se usa XMLHttpRequest, no es necesario
+      /*const pintaPersonas = () => {
+        if (peti.readyState === 4 && peti.status === 200) {
+          let personas = JSON.parse(peti.responseText);
+          pintaTabla(personas);
+        }
+      };*/
+
+      const pintaTabla = (arrPersonas) => {
+        let tabla = document.getElementById("filas_tabla");
+        tabla.innerHTML = "";
+
+        for (let persona of arrPersonas) {
+          let fila = document.createElement("tr");
+
+          fila.innerHTML = `
+            <td>${persona.ID}</td>
+            <td>${persona.DNI}</td>
+            <td>${persona.NOMBRE}</td>
+            <td>${persona.APELLIDOS}</td>
+            <td><button class="btnBorrar">Borrar</button></td>
+            <td><button class="btnEditar">Editar</button></td>
+          `;
+
+          fila.querySelector(".btnBorrar").onclick = () => borrarPersona(persona.ID);
+          fila.querySelector(".btnEditar").onclick = () => editarPersona(persona);
+
+          tabla.appendChild(fila);
+        }
+      };
+
+      const muestraForm = () => {
+        document.getElementById("formPersonas").classList.add("ver");
+
+        modoEdicion = false;
+        idEnEdicion = null;
+
+        document.querySelector("legend").innerText = "Alta en el servicio";
+        document.getElementById("btAnade").innerText = "Añadir";
+
+        document.getElementById("dni").value = "";
+        document.getElementById("nombre").value = "";
+        document.getElementById("apellidos").value = "";
+
+        document.getElementById("btAnade").onclick = anade;
+        document.getElementById("btCancelar").onclick = cancelar;
+      };
+
+      const cancelar = () => {
+        document.getElementById("formPersonas").classList.remove("ver");
+
+        modoEdicion = false;
+        idEnEdicion = null;
+
+        document.getElementById("btAnade").innerText = "Añadir";
+        document.querySelector("legend").innerText = "Alta en el servicio";
+      };
+
+      const anade = () => {
+        let dni = document.getElementById("dni").value;
+        let nombre = document.getElementById("nombre").value;
+        let apellidos = document.getElementById("apellidos").value;
+
+
+        let peti2 = fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'appication/x-www-form-urlenconded',
+          },
+          body: JSON.stringify({
+             servicio: "insertar", 
+             dni, 
+             nombre, 
+             apellidos 
+            })
+          })
+          .then(respuesta => respuesta.json())
+          .then(datos => {
+            console.log("Esto son los datos: ", datos);
+            pintaTabla(datos);
+            document.getElementById("formPersonas").classList.remove("ver");
+          })
+          .catch(error => console.log(error));
+        
+      };
+
+      const borrarPersona = (id) => {
+        if (!confirm("¿Seguro que quieres borrar?")) {
+          return;
+        }
+        
+        let peti3 = fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: JSON.stringify({ servicio: "borrar", id })
+        })
+        .then(respuesta => respuesta.json())
+        .then(datos => {
+          console.log("Esto son los datos: ", datos);
+          pintaTabla(datos);
+        })
+        .catch(error => console.log(error));
+      };
+
+
+      const editarPersona = (persona) => {
+        modoEdicion = true;
+        idEnEdicion = persona.ID;
+
+        document.getElementById("formPersonas").classList.add("ver");
+
+        document.querySelector("legend").innerText = "Modifica en el servicio";
+        document.getElementById("btAnade").innerText = "Editar";
+
+        document.getElementById("dni").value = persona.DNI;
+        document.getElementById("nombre").value = persona.NOMBRE;
+        document.getElementById("apellidos").value = persona.APELLIDOS;
+
+        document.getElementById("btAnade").onclick = modifica;
+        document.getElementById("btCancelar").onclick = cancelar;
+      };
+
+      const modifica = () => {
+        let dni = document.getElementById("dni").value;
+        let nombre = document.getElementById("nombre").value;
+        let apellidos = document.getElementById("apellidos").value;
+
+        let peti4 = fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: JSON.stringify({ servicio: "modificar", id: idEnEdicion, dni, nombre, apellidos })
+        })
+        .then(respuesta => respuesta.json())
+        .then(datos => {
+          console.log("Esto son los datos: ", datos);
+          pintaTabla(datos);
+          document.getElementById("formPersonas").classList.remove("ver");
+        })
+        .catch(error => console.log(error));
+      };
+    </script>
+  </head>
+
+  <body>
+    <h3>Registro de Usuarios</h3>
+
+    <div id="formPersonas" class="formPersonas">
+      <fieldset>
+        <legend>Alta en el servicio</legend>
+        <div>
+          <label for="dni">DNI</label>
+          <input type="text" id="dni" size="10" maxlength="9"/>
+        </div>
+        <div>
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre"/>
+        </div>
+        <div>
+          <label for="apellidos">Apellidos</label>
+          <input type="text" id="apellidos" size="40"/>
+        </div>
+        <div class="btn">
+          <button id="btAnade">Añadir</button>
+          <button id="btCancelar">Cancelar</button>
+        </div>
+      </fieldset>
+    </div>
+
+    <button class="btn" id="btNuevaPersona">Nueva persona</button>
+
+    <br><br>
+
+    <table id="tabla_personas" border="1">
+      <tr>
+        <th>ID</th>
+        <th>DNI</th>
+        <th>NOMBRE</th>
+        <th>APELLIDOS</th>
+        <th>Borrar</th>
+        <th>Editar</th>
+      </tr>
+      <tbody id="filas_tabla"></tbody>
+    </table>
+  </body>
+</html>

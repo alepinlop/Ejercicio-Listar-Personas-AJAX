@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Ejercicio Listado Personas. AJAX</title>
+    <style type="text/css">
+      h3 {
+        color: red;
+      }
+
+      .formPersonas {
+        visibility: hidden;
+        position: absolute;
+        top: 20%;
+        left: 20%;
+        z-index: 11;
+        background-color: pink;
+        border: 2px solid maroon;
+        border-radius: 15px;
+        padding: 1em;
+        color: red;
+      }
+
+      .formPersonas div label {
+        display: block;
+        margin-top: .5em;
+      }
+
+      .formPersonas .btn {
+        display: block;
+        margin-top: 1em;
+      }
+
+      .ver {
+        visibility: visible;
+        opacity: 1;
+      }
+    </style>
+
+    <script type="text/javascript">
+      const url = 'http://localhost/AJAX/CLIENTE_REC/EjercicioListaPersonas/servidor.php';
+      let modoEdicion = false;
+      let idEnEdicion = null;
+
+      const peti = new XMLHttpRequest();
+
+      window.onload = () => {
+        document.getElementById("btNuevaPersona").onclick = muestraForm;
+        peti.onreadystatechange = pintaPersonas;
+
+        peti.open('POST', url);
+        peti.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        let parametro = JSON.stringify({ servicio: "listar" });
+        peti.send(parametro);
+      };
+
+      const pintaPersonas = () => {
+        if (peti.readyState === 4 && peti.status === 200) {
+          let personas = JSON.parse(peti.responseText);
+          pintaTabla(personas);
+        }
+      };
+
+      const pintaTabla = (arrPersonas) => {
+        let tabla = document.getElementById("filas_tabla");
+        tabla.innerHTML = "";
+
+        for (let persona of arrPersonas) {
+          let fila = document.createElement("tr");
+
+          fila.innerHTML = `
+            <td>${persona.ID}</td>
+            <td>${persona.DNI}</td>
+            <td>${persona.NOMBRE}</td>
+            <td>${persona.APELLIDOS}</td>
+            <td><button class="btnBorrar">Borrar</button></td>
+            <td><button class="btnEditar">Editar</button></td>
+          `;
+
+          fila.querySelector(".btnBorrar").onclick = () => borrarPersona(persona.ID);
+          fila.querySelector(".btnEditar").onclick = () => editarPersona(persona);
+
+          tabla.appendChild(fila);
+        }
+      };
+
+      const muestraForm = () => {
+        document.getElementById("formPersonas").classList.add("ver");
+
+        modoEdicion = false;
+        idEnEdicion = null;
+
+        document.querySelector("legend").innerText = "Alta en el servicio";
+        document.getElementById("btAnade").innerText = "Añadir";
+
+        document.getElementById("dni").value = "";
+        document.getElementById("nombre").value = "";
+        document.getElementById("apellidos").value = "";
+
+        document.getElementById("btAnade").onclick = anade;
+        document.getElementById("btCancelar").onclick = cancelar;
+      };
+
+      const cancelar = () => {
+        document.getElementById("formPersonas").classList.remove("ver");
+
+        modoEdicion = false;
+        idEnEdicion = null;
+
+        document.getElementById("btAnade").innerText = "Añadir";
+        document.querySelector("legend").innerText = "Alta en el servicio";
+      };
+
+      const anade = () => {
+        let dni = document.getElementById("dni").value;
+        let nombre = document.getElementById("nombre").value;
+        let apellidos = document.getElementById("apellidos").value;
+
+        const peti2 = new XMLHttpRequest();
+        peti2.onreadystatechange = function () {
+          if (this.readyState === 4 && this.status === 200) {
+            let personas = JSON.parse(this.responseText);
+            pintaTabla(personas);
+            document.getElementById("formPersonas").classList.remove("ver");
+          }
+        };
+
+        peti2.open('POST', url);
+        peti2.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        let parametro = JSON.stringify({ servicio: "insertar", dni, nombre, apellidos });
+        peti2.send(parametro);
+      };
+
+      const borrarPersona = (id) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            let personas = JSON.parse(xhr.responseText);
+            pintaTabla(personas);
+          } else {
+            console.error("Error al borrar");
+          }
+        };
+
+        xhr.send(JSON.stringify({ servicio: "borrar", id }));
+      };
+
+      const editarPersona = (persona) => {
+        modoEdicion = true;
+        idEnEdicion = persona.ID;
+
+        document.getElementById("formPersonas").classList.add("ver");
+
+        document.querySelector("legend").innerText = "Modifica en el servicio";
+        document.getElementById("btAnade").innerText = "Editar";
+
+        document.getElementById("dni").value = persona.DNI;
+        document.getElementById("nombre").value = persona.NOMBRE;
+        document.getElementById("apellidos").value = persona.APELLIDOS;
+
+        document.getElementById("btAnade").onclick = modifica;
+        document.getElementById("btCancelar").onclick = cancelar;
+      };
+
+      const modifica = () => {
+        let dni = document.getElementById("dni").value;
+        let nombre = document.getElementById("nombre").value;
+        let apellidos = document.getElementById("apellidos").value;
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            let personas = JSON.parse(xhr.responseText);
+            pintaTabla(personas);
+            cancelar();
+          } else {
+            console.error("Error al modificar");
+          }
+        };
+
+        xhr.send(JSON.stringify({ servicio: "modificar", id: idEnEdicion, dni, nombre, apellidos }));
+      };
+    </script>
+  </head>
+
+  <body>
+    <h3>Registro de Usuarios</h3>
+
+    <div id="formPersonas" class="formPersonas">
+      <fieldset>
+        <legend>Alta en el servicio</legend>
+        <div>
+          <label for="dni">DNI</label>
+          <input type="text" id="dni" size="10" maxlength="9"/>
+        </div>
+        <div>
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre"/>
+        </div>
+        <div>
+          <label for="apellidos">Apellidos</label>
+          <input type="text" id="apellidos" size="40"/>
+        </div>
+        <div class="btn">
+          <button id="btAnade">Añadir</button>
+          <button id="btCancelar">Cancelar</button>
+        </div>
+      </fieldset>
+    </div>
+
+    <button class="btn" id="btNuevaPersona">Nueva persona</button>
+
+    <br><br>
+
+    <table id="tabla_personas" border="1">
+      <tr>
+        <th>ID</th>
+        <th>DNI</th>
+        <th>NOMBRE</th>
+        <th>APELLIDOS</th>
+        <th>Borrar</th>
+        <th>Editar</th>
+      </tr>
+      <tbody id="filas_tabla"></tbody>
+    </table>
+  </body>
+</html>

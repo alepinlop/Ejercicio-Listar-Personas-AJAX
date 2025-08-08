@@ -1,0 +1,327 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Ejercicio Listado Personas. AJAX</title>
+    <style type="text/css">
+      h3{
+        color: red;
+      }
+			
+			/* CSS para el formulario:   */
+			.formPersonas{
+				visibility: hidden;  
+				position: absolute;
+				top: 20%;
+				left: 20%;
+				z-index:11;
+				background-color: pink;
+				border: 2px solid maroon;
+				border-radius: 15px;
+				padding: 1em;
+				color: red;
+				
+			/*	opacity:0;   */
+			/*	transition: all 1s;   */
+			}
+
+			.formPersonas div label {
+				display: block;
+				margin-top: .5em;
+			}
+			
+			.formPersonas .btn {
+				display: block;
+				margin-top: 1em;
+			}
+			
+			
+			.ver {
+				visibility: visible;  
+				opacity:1;
+			}
+			
+    </style>
+		<!--<script type="text/javascript" src="util2AJAX.js"></script>-->
+    <script type="text/javascript">
+		
+			// Con fetch no necesitamos crear múltiples peticiones XMLHttpRequest,
+			// sino que podemos reutilizar una sola petición para diferentes acciones.
+			/*var peti = new XMLHttpRequest();
+			
+			var peti2 = new XMLHttpRequest();
+
+			var peti3 = new XMLHttpRequest();
+
+			var peti4 = new XMLHttpRequest();*/
+
+			var url = 'http://localhost/AJAX/CLIENTE_REC/EjercicioListaPersonas/servidor.php';
+
+			let personaEnEdicion = null;
+
+			window.onload = () => {
+				document.getElementById("btNuevaPersona").onclick = muestraForm; // Asignar la función para mostrar el formulario
+
+				let peti = {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json; charset=UTF-8',
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({ servicio: "listar" }) // Enviamos el servicio que queremos realizar
+				};
+
+				// Realizamos la petición para obtener las personas
+				fetch(url, peti)
+					.then(respuesta => respuesta.json())
+					.then(datos => {
+						console.log('Datos recibidos del servidor (fetch):', datos);
+						pintaTabla(datos); // Llamada a la función que pinta la tabla, donde 'datos' es el array de objetos que contiene los datos de las personas.
+					})
+					.catch(error =>	console.log('Error al obtener los datos:', error));
+			};
+
+			// No será necesario usar el método pintaPersonas porque ya estamos usando fetch para obtener los datos directamente.
+
+
+			const pintaTabla = (arrPersonas) => {
+				let tabla = document.getElementById("filas_tabla"); // Llamada al cuerpo de la tabla
+
+				tabla.innerHTML = ""; // Limpiamos la tabla
+
+				// Recorremos el array de personas y vamos creando las filas y celdas de la tabla.
+				for (let i = 0; i < arrPersonas.length; i++) {
+					let fila = document.createElement("tr");
+
+					let persona = arrPersonas[i]; // Obtenemos la persona actual del array
+					// Creamos las celdas de la fila de forma más compacta
+					fila.innerHTML = `
+						<td>${persona.ID}</td>
+						<td>${persona.DNI}</td>
+						<td>${persona.NOMBRE}</td>
+						<td>${persona.APELLIDOS}</td>
+						<td><button class="btnBorrar">Borrar</button></td>
+						<td><button class="btnEditar">Editar</button></td>
+					`;
+
+					// Añadir los eventos a los botones de borrar y editar
+					// Devolvemos el primer elemento que coincida con el selector CSS
+					fila.querySelector(".btnBorrar").onclick = () => {
+						console.log("Borrar persona con ID:", persona.ID);
+						// Aquí se llamaría a la función para borrar la persona
+						borrarPersona(persona.ID);
+					};
+
+					// Realizamos lo mismo para el botón de editar
+					fila.querySelector(".btnEditar").onclick = () => {
+						console.log("Editar persona con ID:", persona.ID);
+						// Aquí se llamaría a la función para editar la persona
+						editarPersona(persona);
+					};
+
+					tabla.appendChild(fila);
+				}
+			};
+
+			// Función para mostrar el formulario de añadir persona.
+			const muestraForm = () => {
+				console.log("Llega al formulario");
+				// Mostrar el formulario
+				document.getElementById("formPersonas").classList.add("ver");
+
+				// Función del botón Añadir
+				document.getElementById("btAnade").onclick = anade;
+
+				// Función del botón cancelar
+				document.getElementById("btCancelar").onclick  = cancelar;
+
+
+			}
+
+			// Función que pone el formulario en su estado inicial.
+			const reseteaForm = () => {
+				// Limpiar los campos del formulario
+				document.getElementById("dni").value = "27473339T";
+				document.getElementById("nombre").value = "Marco Elio";
+				document.getElementById("apellidos").value = "García Gomariz";
+
+				// Cambiar el texto del botón Añadir
+				document.querySelector("legend").innerText = "Alta en el servicio";
+				document.getElementById("btAnade").innerText = "Añadir";
+			}
+
+			const cancelar = () => {
+				console.log("pulsado el boton cancelar");
+				// Ocultar el formulario
+				document.getElementById("formPersonas").classList.remove("ver");
+				reseteaForm(); // Reseteamos el formulario para que vuelva a su estado inicial.
+			}
+
+			const anade = () => {
+					console.log("pulsado el boton añadir");
+					// Recoger los datos del formulario
+					let dni = document.getElementById("dni").value;
+					let nombre = document.getElementById("nombre").value;
+					let apellidos = document.getElementById("apellidos").value;
+					console.log("dni", dni);
+					console.log("nombre", nombre);
+					console.log("apellidos", apellidos);
+
+					let peti2 = fetch(url, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json; charset=UTF-8',
+							'Accept': 'application/json',
+						},
+						body: JSON. stringify({
+							servicio: "insertar",
+							dni,
+							nombre,
+							apellidos,
+						})
+					})
+					// Enviamos los datos al servidor
+					.then(respuesta => respuesta.json())
+					.then(datos => {
+						console.log('Datos recibidos tras la inserción (fetch):', datos);
+						pintaTabla(datos); // Llamada a la función que pinta la tabla, donde 'datos' es el array de objetos que contiene los datos de las personas.
+						// ocultar y limpiar formulario
+						document.getElementById("formPersonas").classList.remove("ver");
+					})
+					.catch(error => console.log('Error al añadir la persona:', error));
+			};
+
+			// Funciones para editar una persona
+			// La primera solo se encarga de modificar los datos del formulario y recogerlos.
+			const editarPersona = (persona) => {
+				// Primero visualizamos el formulario
+				document.getElementById("formPersonas").classList.add("ver");
+
+				// Cambiamos el contenido del formulario para editar
+				document.querySelector("legend").innerText = "Modifica en el servicio";
+				document.getElementById("btAnade").innerText = "Editar";
+
+				personaEnEdicion = persona; // Guardamos la persona en edición
+
+				// Rellenamos los campos del formulario con los datos de la persona a editar
+				document.getElementById("dni").value = persona.DNI;
+				document.getElementById("nombre").value = persona.NOMBRE;
+				document.getElementById("apellidos").value = persona.APELLIDOS;
+
+				// Asignar la función del botón editar
+				document.getElementById("btAnade").onclick = modifica;
+
+				document.getElementById("btCancelar").onclick = cancelar; // Asignar la función del botón cancela
+			};
+
+			// La función que modifica los datos de la persona.
+			const modifica = () => {
+				console.log("Pulsado el boton editar");
+
+				let dni = document.getElementById("dni").value;
+				let nombre = document.getElementById("nombre").value;
+				let apellidos = document.getElementById("apellidos").value;
+
+				let peti3 = fetch(url, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json; charset=UTF-8',
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({
+						servicio: "modificar",
+						id:personaEnEdicion.ID, // Usamos el ID de la persona en edición
+						dni,
+						nombre,
+						apellidos,
+					})
+				})
+				.then(respuesta => respuesta.json())
+				.then(datos => {
+					console.log('Datos recibidos tras la edición (fetch):', datos);
+					pintaTabla(datos); // Llamada a la función que pinta la tabla, donde 'datos' es el array de objetos que contiene los datos de las personas.
+					document.getElementById("formPersonas").classList.remove("ver"); // Ocultamos el formulario
+				})
+				.catch(error => console.log('Error al editar la persona:', error));
+
+				reseteaForm(); // Reseteamos el formulario para que vuelva a su estado inicial.
+			};
+
+			// Función para borrar una persona
+			const borrarPersona = (id) => {
+				// Primero mostramos un mensaje de confirmación al usuario
+				if (confirm("¿Estás seguro de que quieres borrar esta persona?")) {
+					// Configurar la petición para borrar la persona
+
+					let peti4 = fetch(url, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json; charset=UTF-8',
+							'Accept': 'application/json',
+						},
+						body: JSON.stringify({
+							servicio: "borrar",
+							id: id, // Pasamos el ID de la persona a borrar
+						})
+					})
+					.then(respuesta => respuesta.json())
+					.then(datos => {
+						console.log('Datos recibidos tras el borrado (fetch):', datos);
+						pintaTabla(datos); // Llamada a la función que pinta la tabla, donde 'datos' es el array de objetos que contiene los datos de las personas.
+					})
+					.catch(error => console.log('Error al borrar la persona:', error));
+				};
+			};
+
+    </script>
+  </head>
+  <body>
+    <h3>Registro de Usuarios</h3>
+		
+		<div id="formPersonas" class="formPersonas ">
+			<fieldset>
+				<legend>Alta en el servicio</legend>
+				<div>
+					<label for="dni">DNI</label>
+					<input type="text" id="dni" size="10" maxlength="9" value="27473339T"/>
+				</div>
+				<div>
+					<label for="nombre">Nombre</label>
+					<input type="text" id="nombre" value="Marco Elio"/>
+				</div>
+				<div>
+					<label for="apellidos">Apellidos</label>
+					<input type="text" id="apellidos" size="40" value="García Gomariz"/>
+				</div>
+				<div class="btn">
+					<button id="btAnade">Añadir </button> 
+					<button id="btCancelar">Cancelar </button>
+				</div>
+			</fieldset>
+		</div>
+		
+		
+		
+		<br/>
+	 <button class="btn" id="btNuevaPersona">Nueva persona</button> 
+	 <br><br>
+		<table id="tabla_personas" border="1">
+			<tr>
+				<th>ID</th>
+				<th>DNI</th>
+				<th>NOMBRE</th>
+				<th>APELLIDOS</th>
+				<th>Borrar</th>
+				<th>Editar</th>
+			</tr>
+			
+			<tbody id="filas_tabla">
+			
+			</tbody>
+		</table>
+
+		<br><br>
+		
+  </body>
+</html>
